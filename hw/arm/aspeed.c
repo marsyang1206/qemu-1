@@ -152,7 +152,7 @@ struct AspeedMachineState {
         SCU_AST2400_HW_STRAP_BOOT_MODE(AST2400_SPI_BOOT))
 
 /* AST2600 evb hardware value */
-#define AST2600_EVB_HW_STRAP1 0x000000C0
+#define AST2600_EVB_HW_STRAP1 (0x000000C0)// | 0x4)
 #define AST2600_EVB_HW_STRAP2 0x00000003
 
 /* Tacoma hardware value */
@@ -518,10 +518,23 @@ static void ast2500_evb_i2c_init(AspeedMachineState *bmc)
     i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 11), "ds1338", 0x32);
 }
 
+static void aspeed_eeprom_init(I2CBus *bus, uint8_t addr, uint32_t rsize);
+static void create_pca9552(AspeedSoCState *soc, int bus_id, int addr);
 static void ast2600_evb_i2c_init(AspeedMachineState *bmc)
 {
+    AspeedSoCState *soc = &bmc->soc;
+    I2CSlave *i2c_mux;
+    uint8_t *eeprom_buf = g_malloc0(8 * 1024);
+    memset (eeprom_buf, 0xff, 8 * 1024);
+
     /* Start with some devices on our I2C busses */
     ast2500_evb_i2c_init(bmc);
+
+    i2c_mux = i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 6),
+                                      "pca9546", 0x70);
+
+    smbus_eeprom_init_one(pca954x_i2c_get_bus(i2c_mux, 0), 0x50,
+                          eeprom_buf);
 }
 
 static void romulus_bmc_i2c_init(AspeedMachineState *bmc)
