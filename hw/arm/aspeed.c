@@ -524,17 +524,13 @@ static void ast2600_evb_i2c_init(AspeedMachineState *bmc)
 {
     AspeedSoCState *soc = &bmc->soc;
     I2CSlave *i2c_mux;
-    uint8_t *eeprom_buf = g_malloc0(8 * 1024);
-    memset (eeprom_buf, 0xff, 8 * 1024);
 
     /* Start with some devices on our I2C busses */
     ast2500_evb_i2c_init(bmc);
 
     i2c_mux = i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 6),
                                       "pca9546", 0x70);
-
-    smbus_eeprom_init_one(pca954x_i2c_get_bus(i2c_mux, 0), 0x50,
-                          eeprom_buf);
+    smbus_eeprom_init (pca954x_i2c_get_bus(i2c_mux, 0), 8 , NULL, 0);
 }
 
 static void romulus_bmc_i2c_init(AspeedMachineState *bmc)
