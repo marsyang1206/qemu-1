@@ -551,6 +551,32 @@ static void ast2500_evb_i2c_init(AspeedMachineState *bmc)
 
 static void ast2600_evb_i2c_init(AspeedMachineState *bmc)
 {
+    int fd, n;
+    AspeedSoCState *soc = &bmc->soc;
+    I2CBus *i2c[13] = {};
+    I2CSlave *i2c_mux;
+    uint8_t *eeprom_buf = g_malloc0(8 * 1024);
+
+    if ((fd =open("/home/mars/repo/frugen/fru.bin",O_RDONLY) ) > 0) {
+        n = read (fd, eeprom_buf, 8*1024);
+        printf ("read n %d\n",n);
+        printf ("%x %x\n",eeprom_buf[0],eeprom_buf[1]);
+        close (fd);
+    }
+
+
+
+    //Riser card w/ TMP sensor behind MUX
+    i2c_mux = i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 12),
+                                      "pca9546", 0x72);
+    i2c_slave_create_simple(pca954x_i2c_get_bus(i2c_mux, 0),TYPE_TMP105, 0x4d);
+
+    i2c[12] = aspeed_i2c_get_bus(&soc->i2c, 12);
+
+    smbus_eeprom_init_one(i2c[12], 0x50, eeprom_buf);
+    i2c_slave_create_simple(i2c[12], "tmp421", 0x4c);
+    i2c_slave_create_simple(i2c[12], "tmp421", 0x4d);
+
     /* Start with some devices on our I2C busses */
     ast2500_evb_i2c_init(bmc);
 }
